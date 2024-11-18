@@ -5,9 +5,14 @@ import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 import fileUpload from "express-fileupload";
 import ErrorHandler from "./utils/ErrorHandler.js";
+import HandleConnectDatabase from "./utils/MongoConnection.js";
+import CategoryRoutes from "./routes/CategoryRoutes.js";
 
 const app = express();
 dotenv.config();
+
+HandleConnectDatabase();
+
 app.use(express.json());
 app.use(cors({
     origin: "*",
@@ -28,10 +33,11 @@ app.use(fileUpload({
 }));
 
 app.use("/api", User)
+app.use("/api/categories", CategoryRoutes)
 
 
 app.use(ErrorHandler)
 
-app.listen(5000, () => {
+app.listen(9000, () => {
     console.log("APP Listening To")
 })
