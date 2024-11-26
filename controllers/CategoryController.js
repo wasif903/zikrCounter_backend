@@ -183,28 +183,24 @@ const HandleGetHistory = async (req, res) => {
     const { userID } = req.params;
     const { month } = req.query;
 
-    // Check if the user exists
     const findUser = await User.findById(userID);
     if (!findUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get all categories associated with the user
     const userCategories = await CategoryModel.find({ userID });
 
     if (!userCategories.length) {
       return res.status(404).json({ message: "No categories found for this user" });
     }
 
-    // Default to current month if no month is provided
     const currentDate = new Date();
-    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.getMonth(); // Month is 0-indexed
+    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.getMonth(); 
     const queryYear = currentDate.getFullYear();
 
     const startOfMonth = new Date(queryYear, queryMonth, 1);
     const endOfMonth = new Date(queryYear, queryMonth + 1, 1);
 
-    // Aggregate counts for all categories by day
     const history = await CounterModel.aggregate([
       {
         $match: {
