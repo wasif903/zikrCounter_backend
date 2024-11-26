@@ -1,6 +1,7 @@
 import Joi from "joi";
 import CategoryModel from "../models/CategoryModel.js";
 import User from "../models/User.js";
+import CounterModel from "../models/CounterModel.js";
 
 const HandleCreateCAtegory = async (req, res) => {
   try {
@@ -8,15 +9,18 @@ const HandleCreateCAtegory = async (req, res) => {
     if (!userID) {
       return res.status(400).json({ message: "Invalid User ID" });
     }
+
     const schema = Joi.object({
       categoryName: Joi.string().required(),
+      image: Joi.string().required(),
     });
+
     if (error) {
       return reply.status(400).send({ message: error });
     }
     const { error, value } = validateData(schema, req.body);
 
-    const { categoryName } = value;
+    const { categoryName, image } = value;
 
     const findUser = await User.findById(userID);
     if (!findUser) {
@@ -34,6 +38,7 @@ const HandleCreateCAtegory = async (req, res) => {
     const newCategory = new CategoryModel({
       userID,
       categoryName,
+      image,
     });
     await newCategory.save();
     res.status(201).json({ message: "Category Created Successfully" });
@@ -60,4 +65,123 @@ const HandleGetUserCategories = async (req, res) => {
   }
 };
 
-export { HandleCreateCAtegory, HandleGetUserCategories };
+const HandleCount = async (req, res) => {
+  try {
+    const { userID, catID } = req.params;
+    if (!userID || !catID) {
+      return res
+        .status(400)
+        .json({ message: "Invalid User ID or Category ID" });
+    }
+    const findUser = await User.findById(userID);
+    if (!findUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const findCategory = await CategoryModel.findById(catID);
+    if (!findCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    const count = new CounterModel({
+      userID,
+      catID,
+    });
+    await count.save();
+    res.status(201).json({ message: "Count Created Successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const HandleGetSingleCat = async (req, res) => {
+  try {
+    const { userID, catID } = req.params;
+    const { month } = req.query;
+
+    if (!userID || !catID) {
+      return res
+        .status(400)
+        .json({ message: "Invalid User ID or Category ID" });
+    }
+
+    const findUser = await User.findById(userID);
+    if (!findUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const findCategory = await CategoryModel.findById(catID);
+    if (!findCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    const currentDate = new Date();
+    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.getMonth(); 
+    const queryYear = currentDate.getFullYear();
+
+    const startOfMonth = new Date(queryYear, queryMonth, 1);
+    const endOfMonth = new Date(queryYear, queryMonth + 1, 1);
+
+    const startOfDay = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate()
+    );
+    const endOfDay = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate() + 1
+    );
+
+    const countsByDay = await CounterModel.aggregate([
+      {
+        $match: {
+          userID,
+          categoryID: catID,
+          createdAt: { $gte: startOfMonth, $lt: endOfMonth },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 }, 
+      },
+    ]);
+
+    const todayCount = await CounterModel.countDocuments({
+      userID,
+      categoryID: catID,
+      createdAt: { $gte: startOfDay, $lt: endOfDay },
+    });
+
+    const totalCount = await CounterModel.countDocuments({
+      userID,
+      categoryID: catID,
+    });
+
+    res.status(200).json({
+      category: findCategory,
+      todayCount,
+      totalCount,
+      countsByDay,
+    });
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+
+
+export {
+  HandleCreateCAtegory,
+  HandleGetUserCategories,
+  HandleCount,
+  HandleGetSingleCat,
+};

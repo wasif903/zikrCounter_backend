@@ -13,13 +13,12 @@ const CategoryModel = new Schema(
       unique: true,
     },
 
-    lastOpened: {
+    image: {
       type: String,
     },
 
-    counter: {
-      type: Number,
-      default: 0,
+    lastOpened: {
+      type: String,
     },
   },
   {
