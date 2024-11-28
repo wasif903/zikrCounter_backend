@@ -12,52 +12,99 @@ const HandleGetAllUsers = (req, res) => {
 
 // @POST
 // ENDPOINT: /api/signup
+// const HandleSignup = async (req, res) => {
+//   try {
+//     const schema = Joi.object({
+//       username: Joi.string().min(3).max(30).required(),
+//       email: Joi.string()
+//         .required()
+//         .custom((value, helpers) => {
+//           console.log(Joi.string().email());
+//           if (Joi.string().email().validate(value).error === null) {
+//             return value;
+//           }
+
+//           if (/^\+?\d{11,12}$/.test(value)) {
+//             return value;
+//           }
+
+//           return helpers.message("Invalid email or phone number format");
+//         }),
+//       password: Joi.string().min(8).required().messages({
+//         "any.required": "Password is required",
+//         "string.min": "Password must be at least 8 characters long",
+//       }),
+//     });
+
+//     const { error, value } = validateData(schema, req.body);
+
+//     console.log(error);
+
+//     if (error) {
+//       return res.status(400).send({ message: error });
+//     }
+
+//     const { username, email, password } = value;
+
+//     const findExistingUser = await User.findOne({ email: email });
+
+//     if (findExistingUser) {
+//       return res
+//         .status(409)
+//         .json({ message: "email or phone number must be unique" });
+//     }
+
+//     const newUser = new User({ username, email, password });
+//     await newUser.save();
+
+//     const token = {
+//       _id: newUser._id,
+//       username: newUser.username,
+//       email: newUser.email,
+//       role: ["User"],
+//     };
+
+//     res.status(201).json({ message: "User created successfully", token });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 const HandleSignup = async (req, res) => {
   try {
     const schema = Joi.object({
       username: Joi.string().min(3).max(30).required(),
-      emailOrPhone: Joi.string()
-        .required()
-        .custom((value, helpers) => {
-          // Check if value is a valid email
-          if (Joi.string().email().validate(value).error === null) {
-            return value;
-          }
-          // Check if value is a valid phone number (11 or 12 digits)
-          if (/^\+?\d{11,12}$/.test(value)) {
-            return value;
-          }
-          return helpers.message("Invalid email or phone number format");
-        }),
+      email: Joi.string().email().required(),
       password: Joi.string().min(8).required().messages({
         "any.required": "Password is required",
         "string.min": "Password must be at least 8 characters long",
       }),
     });
 
-    if (error) {
-      return reply.status(400).send({ message: error });
-    }
-
     const { error, value } = validateData(schema, req.body);
 
-    const { username, emailOrPhone, password } = value;
+    if (error) {
+      return res.status(400).send({ message: error });
+    }
 
-    const findExistingUser = await User.findOne({ emailOrPhone: emailOrPhone });
+    const { username, email, password } = value;
+
+    const findExistingUser = await User.findOne({ email: email });
 
     if (findExistingUser) {
       return res
         .status(409)
-        .json({ message: "User already exists with this email" });
+        .json({ message: "Email or phone number must be unique" });
     }
 
-    const newUser = new User({ username, emailOrPhone, password });
+    const newUser = new User({ username, email, password });
     await newUser.save();
 
     const token = {
       _id: newUser._id,
       username: newUser.username,
-      emailOrPhone: newUser.emailOrPhone,
+      email: newUser.email,
       role: ["User"],
     };
 
@@ -73,32 +120,22 @@ const HandleSignup = async (req, res) => {
 const HandleLogin = async (req, res) => {
   try {
     const schema = Joi.object({
-      emailOrPhone: Joi.string()
-        .required()
-        .custom((value, helpers) => {
-          if (Joi.string().email().validate(value).error === null) {
-            return value;
-          }
-          if (/^\+?\d{11,12}$/.test(value)) {
-            return value;
-          }
-          return helpers.message("Invalid email or phone number format");
-        }),
+      email: Joi.string().email().required(),
       password: Joi.string().min(8).required().messages({
         "any.required": "Password is required",
         "string.min": "Password must be at least 8 characters long",
       }),
     });
 
+    const { error, value } = validateData(schema, req.body);
+
     if (error) {
       return res.status(400).send({ message: error });
     }
 
-    const { error, value } = validateData(schema, req.body);
+    const { email, password } = value;
 
-    const { emailOrPhone, password } = value;
-
-    const user = await User.findOne({ emailOrPhone: emailOrPhone });
+    const user = await User.findOne({ email: email });
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -111,7 +148,7 @@ const HandleLogin = async (req, res) => {
     const token = {
       _id: user._id,
       username: user.username,
-      emailOrPhone: user.emailOrPhone,
+      email: user.email,
       role: user.role,
     };
 
@@ -129,10 +166,13 @@ const HandleForgotPassword = async (req, res) => {
     const schema = Joi.object({
       email: Joi.string().email().required(),
     });
+
+    const { error, value } = validateData(schema, req.body);
+
     if (error) {
       return res.status(400).send({ message: error });
     }
-    const { error, value } = validateData(schema, req.body);
+
     const { email } = value;
     const findUser = await User.findOne({ email: email });
 
@@ -167,10 +207,11 @@ const HandleVerifyOtp = async (req, res) => {
       email: Joi.string().email().required(),
       OtpCode: Joi.number().required(),
     });
+
+    const { error, value } = validateData(schema, req.body);
     if (error) {
       return res.status(400).send({ message: error });
     }
-    const { error, value } = validateData(schema, req.body);
     const { email, OtpCode } = value;
 
     const findUser = await User.findOne({ email: email });
@@ -211,10 +252,11 @@ const HandleResetPassword = async (req, res) => {
       password: Joi.string().min(8).required(),
       confirmPassword: Joi.string().min(8).required(),
     });
+
+    const { error, value } = validateData(schema, req.body);
     if (error) {
       return res.status(400).send({ message: error });
     }
-    const { error, value } = validateData(schema, req.body);
     const { email, password, confirmPassword } = value;
 
     const findUser = await User.findOne({ email: email });
@@ -242,10 +284,11 @@ const HandleResendOtp = async (req, res) => {
     const schema = Joi.object({
       email: Joi.string().email().required(),
     });
+
+    const { error, value } = validateData(schema, req.body);
     if (error) {
       return res.status(400).send({ message: error });
     }
-    const { error, value } = validateData(schema, req.body);
     const { email } = value;
 
     const userExists = await User.findOne({ email: email });

@@ -39,5 +39,5 @@ app.use("/api/categories", CategoryRoutes)
 app.use(ErrorHandler)
 
 app.listen(9000, () => {
-    console.log("APP Listening To")
+    console.log("APP Listening To 9000")
 })

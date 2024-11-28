@@ -15,10 +15,11 @@ const HandleCreateCAtegory = async (req, res) => {
       image: Joi.string().required(),
     });
 
+    const { error, value } = validateData(schema, req.body);
+
     if (error) {
       return reply.status(400).send({ message: error });
     }
-    const { error, value } = validateData(schema, req.body);
 
     const { categoryName, image } = value;
 
@@ -115,7 +116,7 @@ const HandleGetSingleCat = async (req, res) => {
     }
 
     const currentDate = new Date();
-    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.getMonth(); 
+    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.getMonth();
     const queryYear = currentDate.getFullYear();
 
     const startOfMonth = new Date(queryYear, queryMonth, 1);
@@ -149,7 +150,7 @@ const HandleGetSingleCat = async (req, res) => {
         },
       },
       {
-        $sort: { _id: 1 }, 
+        $sort: { _id: 1 },
       },
     ]);
 
@@ -170,13 +171,11 @@ const HandleGetSingleCat = async (req, res) => {
       totalCount,
       countsByDay,
     });
-
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 const HandleGetHistory = async (req, res) => {
   try {
@@ -191,11 +190,13 @@ const HandleGetHistory = async (req, res) => {
     const userCategories = await CategoryModel.find({ userID });
 
     if (!userCategories.length) {
-      return res.status(404).json({ message: "No categories found for this user" });
+      return res
+        .status(404)
+        .json({ message: "No categories found for this user" });
     }
 
     const currentDate = new Date();
-    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.getMonth(); 
+    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.getMonth();
     const queryYear = currentDate.getFullYear();
 
     const startOfMonth = new Date(queryYear, queryMonth, 1);
@@ -259,12 +260,10 @@ const HandleGetHistory = async (req, res) => {
   }
 };
 
-
-
 export {
   HandleCreateCAtegory,
   HandleGetUserCategories,
   HandleCount,
   HandleGetSingleCat,
-  HandleGetHistory
+  HandleGetHistory,
 };
