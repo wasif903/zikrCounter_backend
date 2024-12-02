@@ -12,7 +12,7 @@ const HandleCreateCAtegory = async (req, res) => {
 
     const schema = Joi.object({
       categoryName: Joi.string().required(),
-      image: Joi.string().required(),
+      image: Joi.string().required()
     });
 
     const { error, value } = validateData(schema, req.body);
@@ -29,7 +29,7 @@ const HandleCreateCAtegory = async (req, res) => {
     }
     const findExisting = await CategoryModel.findOne({
       userID,
-      categoryName,
+      categoryName
     });
     if (findExisting) {
       return res
@@ -39,7 +39,7 @@ const HandleCreateCAtegory = async (req, res) => {
     const newCategory = new CategoryModel({
       userID,
       categoryName,
-      image,
+      image
     });
     await newCategory.save();
     res.status(201).json({ message: "Category Created Successfully" });
@@ -68,26 +68,54 @@ const HandleGetUserCategories = async (req, res) => {
 
 const HandleCount = async (req, res) => {
   try {
-    const { userID, catID } = req.params;
-    if (!userID || !catID) {
-      return res
-        .status(400)
-        .json({ message: "Invalid User ID or Category ID" });
+    const { data } = req.params;
+
+    if (!Array.isArray(data)) {
+      return res.status(400).json({ message: "Invalid Format" });
     }
-    const findUser = await User.findById(userID);
-    if (!findUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const findCategory = await CategoryModel.findById(catID);
-    if (!findCategory) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-    const count = new CounterModel({
-      userID,
-      catID,
+
+    const error = [];
+    const validate = data.map(async item => {
+      try {
+        if (item.userID && item.catID) {
+          error.push({
+            ...item,
+            error: { message: "userID or catID doesn't exists!" }
+          });
+        }
+
+        const findUser = await User.findById(item.userID);
+        if (!findUser) {
+          error.push({
+            ...item,
+            error: { message: "User Not Found" }
+          });
+        }
+
+        const findCat = await CategoryModel.findById(item.catID);
+        if (!findCat) {
+          error.push({
+            ...item,
+            error: { message: "Category Not Found" }
+          });
+        }
+      } catch (error) {
+        console.log(error);
+        error.push({
+          ...item,
+          error: { message: "Invalid Request" }
+        });
+      }
     });
-    await count.save();
-    res.status(201).json({ message: "Count Created Successfully" });
+
+    const resolved = await Promise.all(validate);
+
+    if (error.length !== 0) {
+      await CategoryModel.insertMany(data);
+      res.status(201).json({ message: "Count Created Successfully" });
+    } else {
+      res.status(201).json({ message: "Error Updating Data", error });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -138,38 +166,38 @@ const HandleGetSingleCat = async (req, res) => {
         $match: {
           userID,
           categoryID: catID,
-          createdAt: { $gte: startOfMonth, $lt: endOfMonth },
-        },
+          createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+        }
       },
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
           },
-          count: { $sum: 1 },
-        },
+          count: { $sum: 1 }
+        }
       },
       {
-        $sort: { _id: 1 },
-      },
+        $sort: { _id: 1 }
+      }
     ]);
 
     const todayCount = await CounterModel.countDocuments({
       userID,
       categoryID: catID,
-      createdAt: { $gte: startOfDay, $lt: endOfDay },
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
     });
 
     const totalCount = await CounterModel.countDocuments({
       userID,
-      categoryID: catID,
+      categoryID: catID
     });
 
     res.status(200).json({
       category: findCategory,
       todayCount,
       totalCount,
-      countsByDay,
+      countsByDay
     });
   } catch (error) {
     console.log(error);
@@ -206,17 +234,17 @@ const HandleGetHistory = async (req, res) => {
       {
         $match: {
           userID,
-          createdAt: { $gte: startOfMonth, $lt: endOfMonth },
-        },
+          createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+        }
       },
       {
         $group: {
           _id: {
             catID: "$catID",
-            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
           },
-          count: { $sum: 1 },
-        },
+          count: { $sum: 1 }
+        }
       },
       {
         $group: {
@@ -224,35 +252,35 @@ const HandleGetHistory = async (req, res) => {
           dailyCounts: {
             $push: {
               date: "$_id.date",
-              count: "$count",
-            },
-          },
-        },
+              count: "$count"
+            }
+          }
+        }
       },
       {
         $lookup: {
           from: "categories",
           localField: "_id",
           foreignField: "_id",
-          as: "categoryDetails",
-        },
+          as: "categoryDetails"
+        }
       },
       {
-        $unwind: "$categoryDetails",
+        $unwind: "$categoryDetails"
       },
       {
         $project: {
           _id: 0,
           categoryID: "$_id",
           categoryName: "$categoryDetails.name",
-          dailyCounts: 1,
-        },
-      },
+          dailyCounts: 1
+        }
+      }
     ]);
 
     res.status(200).json({
       user: findUser,
-      history,
+      history
     });
   } catch (error) {
     console.log(error);
@@ -265,5 +293,5 @@ export {
   HandleGetUserCategories,
   HandleCount,
   HandleGetSingleCat,
-  HandleGetHistory,
+  HandleGetHistory
 };
