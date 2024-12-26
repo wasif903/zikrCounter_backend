@@ -11,9 +11,10 @@ const HandleCreateCAtegory = async (req, res) => {
     }
 
     const schema = Joi.object({
-      categoryName: Joi.string().required(),
-      image: Joi.string().required()
+      categoryName: Joi.string().required()
     });
+
+    
 
     const { error, value } = validateData(schema, req.body);
 
@@ -21,7 +22,7 @@ const HandleCreateCAtegory = async (req, res) => {
       return reply.status(400).send({ message: error });
     }
 
-    const { categoryName, image } = value;
+    const { categoryName } = value;
 
     const findUser = await User.findById(userID);
     if (!findUser) {
@@ -38,8 +39,7 @@ const HandleCreateCAtegory = async (req, res) => {
     }
     const newCategory = new CategoryModel({
       userID,
-      categoryName,
-      image
+      categoryName
     });
     await newCategory.save();
     res.status(201).json({ message: "Category Created Successfully" });
