@@ -38,6 +38,6 @@ app.use("/api/categories", CategoryRoutes)
 
 app.use(ErrorHandler)
 
-app.listen(9000, () => {
+app.listen(8000, () => {
     console.log("APP Listening To 9000")
 })
