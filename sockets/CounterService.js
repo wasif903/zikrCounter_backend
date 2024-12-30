@@ -31,6 +31,7 @@ const CounterService = (io) => {
       socket.emit("total-count", filterArr);
     });
 
+    
     socket.on("minus-counting", (data) => {
       console.log(data);
       counters = counters.filter(
