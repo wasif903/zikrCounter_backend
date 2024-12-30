@@ -7,11 +7,16 @@ import fileUpload from "express-fileupload";
 import ErrorHandler from "./utils/ErrorHandler.js";
 import HandleConnectDatabase from "./utils/MongoConnection.js";
 import CategoryRoutes from "./routes/CategoryRoutes.js";
+import { CounterService } from "./sockets/CounterService.js";
+import { Server } from "socket.io";
+import { createServer } from "http";
 
 const app = express();
 dotenv.config();
 
 HandleConnectDatabase();
+
+const httpServer = createServer(app);
 
 app.use(express.json());
 app.use(cors({
@@ -35,9 +40,24 @@ app.use(fileUpload({
 app.use("/api", User)
 app.use("/api/categories", CategoryRoutes)
 
-
 app.use(ErrorHandler)
 
-app.listen(8000, () => {
-    console.log("APP Listening To 9000")
+const io = new Server(httpServer, {
+    pingTimeout: 60000,
+    cors: {
+        origin: "*",
+        methods: ['GET', "POST", "PUT", "DELETE", "PATCH"],
+        credentials: true
+    }
+});
+
+
+CounterService(io);
+
+httpServer.listen(process.env.PORT || 8000, () => {
+    console.log(`APP Listening To ${process.env.PORT || 8000}`)
+
 })
+// app.listen(8000, () => {
+//     console.log("APP Listening To 9000")
+// })
