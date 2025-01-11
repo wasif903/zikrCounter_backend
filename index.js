@@ -37,6 +37,10 @@ app.use(fileUpload({
     tempFileDir: '/tmp/'
 }));
 
+app.get("/", (req ,res ) => {
+    res.status(200).json({message: "Backend Is Live!"})
+})
+
 app.use("/api", User)
 app.use("/api/categories", CategoryRoutes)
 
