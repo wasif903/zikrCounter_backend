@@ -18,8 +18,6 @@ const HandleCreateCAtegory = async (req, res) => {
       lastOpened: Joi.string().default(""),
     });
 
-    
-
     const { error, value } = validateData(schema, req.body);
 
     if (error) {
@@ -132,10 +130,92 @@ const HandleCount = async (req, res) => {
   }
 };
 
+// const HandleGetSingleCat = async (req, res) => {
+//   try {
+//     const { userID, catID } = req.params;
+//     const { month } = req.query;
+
+//     if (!userID || !catID) {
+//       return res
+//         .status(400)
+//         .json({ message: "Invalid User ID or Category ID" });
+//     }
+
+//     const findUser = await User.findById(userID);
+//     if (!findUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const findCategory = await CategoryModel.findById(catID);
+//     if (!findCategory) {
+//       return res.status(404).json({ message: "Category not found" });
+//     }
+
+//     findCategory.lastOpened = moment().tz("UTC").toDate();
+//     await findCategory.save();
+
+//     const currentDate = moment().tz("UTC");
+//     const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();
+//     const queryYear = currentDate.year();
+
+//     const startOfMonth = moment
+//       .tz({ year: queryYear, month: queryMonth, day: 1 }, "UTC")
+//       .toDate();
+//     const endOfMonth = moment(startOfMonth).add(1, "month").toDate();
+
+//     const startOfDay = currentDate.startOf("day").toDate();
+//     const endOfDay = currentDate.endOf("day").toDate();
+
+//     const getCountsPerDay = await CounterModel.find({
+//       userID,
+//       catID,
+//       createdAt: {
+//         $gte: new Date(startOfMonth),
+//         $lt: new Date(endOfMonth),
+//       },
+//     });
+
+//     // Group by date and count occurrences
+//     const groupedData = getCountsPerDay.reduce((acc, item) => {
+//       const date = moment(item.createdAt).tz("UTC").format("YYYY-MM-DD");
+//       if (acc[date]) {
+//         acc[date].count += 1;
+//       } else {
+//         acc[date] = { date, count: 1 };
+//       }
+//       return acc;
+//     }, {});
+
+//     // Convert grouped data to an array
+//     const mapData = Object.values(groupedData);
+
+//     const todayCount = await CounterModel.countDocuments({
+//       userID,
+//       catID,
+//       createdAt: { $gte: startOfDay, $lt: endOfDay },
+//     });
+
+//     const totalCount = await CounterModel.countDocuments({
+//       userID,
+//       catID,
+//     });
+
+//     res.status(200).json({
+//       category: findCategory,
+//       todayCount,
+//       totalCount,
+//       countsByDay: mapData,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 const HandleGetSingleCat = async (req, res) => {
   try {
     const { userID, catID } = req.params;
-    const { month } = req.query;
+    const { month, year } = req.query;
 
     if (!userID || !catID) {
       return res
@@ -158,12 +238,16 @@ const HandleGetSingleCat = async (req, res) => {
 
     const currentDate = moment().tz("UTC");
     const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();
-    const queryYear = currentDate.year();
+    const queryYear = year ? parseInt(year, 10) : currentDate.year();
 
     const startOfMonth = moment
       .tz({ year: queryYear, month: queryMonth, day: 1 }, "UTC")
+      .startOf("day")
       .toDate();
-    const endOfMonth = moment(startOfMonth).add(1, "month").toDate();
+    const endOfMonth = moment(startOfMonth)
+      .add(1, "month")
+      .startOf("day")
+      .toDate();
 
     const startOfDay = currentDate.startOf("day").toDate();
     const endOfDay = currentDate.endOf("day").toDate();
@@ -172,12 +256,11 @@ const HandleGetSingleCat = async (req, res) => {
       userID,
       catID,
       createdAt: {
-        $gte: new Date(startOfMonth),
-        $lt: new Date(endOfMonth),
+        $gte: startOfMonth,
+        $lt: endOfMonth,
       },
     });
 
-    // Group by date and count occurrences
     const groupedData = getCountsPerDay.reduce((acc, item) => {
       const date = moment(item.createdAt).tz("UTC").format("YYYY-MM-DD");
       if (acc[date]) {
@@ -188,7 +271,6 @@ const HandleGetSingleCat = async (req, res) => {
       return acc;
     }, {});
 
-    // Convert grouped data to an array
     const mapData = Object.values(groupedData);
 
     const todayCount = await CounterModel.countDocuments({
@@ -214,10 +296,120 @@ const HandleGetSingleCat = async (req, res) => {
   }
 };
 
+// const HandleGetHistory = async (req, res) => {
+//   try {
+//     const { userID } = req.params;
+//     const { month } = req.query;
+
+//     const findUser = await User.findById(userID);
+//     if (!findUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const userCategories = await CategoryModel.find({ userID });
+
+//     if (!userCategories.length) {
+//       return res
+//         .status(404)
+//         .json({ message: "No categories found for this user" });
+//     }
+
+//     const currentDate = moment().tz("UTC");
+//     const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();
+//     const queryYear = currentDate.year();
+
+//     const startOfMonth = moment
+//       .tz({ year: queryYear, month: queryMonth, day: 1 }, "UTC")
+//       .toDate();
+//     const endOfMonth = moment(startOfMonth).add(1, "month").toDate();
+
+//     const userCatMap = userCategories.map(async (category) => {
+//       const getCountsPerDay = await CounterModel.find({
+//         userID,
+//         catID: category._id,
+//         createdAt: {
+//           $gte: startOfMonth,
+//           $lt: endOfMonth,
+//         },
+//       });
+
+//       const mappingDaybyDay = getCountsPerDay.reduce((acc, item) => {
+//         const date = moment(item.createdAt).startOf("day").toDate();
+
+//         const existingDay = acc.find((d) => moment(d.date).isSame(date, "day"));
+
+//         if (existingDay) {
+//           const categoryIndex = existingDay.countHistory.findIndex(
+//             (entry) => entry.categoryName === category.categoryName
+//           );
+
+//           if (categoryIndex !== -1) {
+//             existingDay.countHistory[categoryIndex].count += 1;
+//           } else {
+//             existingDay.countHistory.push({
+//               categoryName: category.categoryName,
+//               count: 1,
+//             });
+//           }
+//         } else {
+//           // Otherwise, create a new entry for the date
+//           acc.push({
+//             date,
+//             countHistory: [
+//               {
+//                 categoryName: category.categoryName,
+//                 count: 1,
+//               },
+//             ],
+//           });
+//         }
+
+//         return acc;
+//       }, []);
+
+//       return mappingDaybyDay;
+//     });
+
+//     const resolved = await Promise.all(userCatMap);
+
+//     const combinedHistory = resolved.flat().reduce((acc, item) => {
+//       const existingDay = acc.find((d) =>
+//         moment(d.date).isSame(item.date, "day")
+//       );
+
+//       if (existingDay) {
+//         item.countHistory.forEach((cat) => {
+//           const existingCategory = existingDay.countHistory.find(
+//             (c) => c.categoryName === cat.categoryName
+//           );
+
+//           if (existingCategory) {
+//             existingCategory.count += cat.count;
+//           } else {
+//             existingDay.countHistory.push(cat);
+//           }
+//         });
+//       } else {
+//         acc.push(item);
+//       }
+
+//       return acc;
+//     }, []);
+
+//     res.status(200).json({
+//       user: findUser,
+//       history: combinedHistory,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 const HandleGetHistory = async (req, res) => {
   try {
     const { userID } = req.params;
-    const { month } = req.query;
+    const { month, year } = req.query;  // Get both month and year from query parameters
 
     const findUser = await User.findById(userID);
     if (!findUser) {
@@ -232,12 +424,15 @@ const HandleGetHistory = async (req, res) => {
         .json({ message: "No categories found for this user" });
     }
 
+    // Use current date for default month and year if not provided
     const currentDate = moment().tz("UTC");
-    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();
-    const queryYear = currentDate.year();
+    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();  // Adjust month to zero-indexed
+    const queryYear = year ? parseInt(year, 10) : currentDate.year();  // Default to current year if not provided
 
+    // Calculate start and end of the selected month
     const startOfMonth = moment
       .tz({ year: queryYear, month: queryMonth, day: 1 }, "UTC")
+      .startOf('day')
       .toDate();
     const endOfMonth = moment(startOfMonth).add(1, "month").toDate();
 
@@ -246,22 +441,21 @@ const HandleGetHistory = async (req, res) => {
         userID,
         catID: category._id,
         createdAt: {
-          $gte: startOfMonth,
-          $lt: endOfMonth,
+          $gte: startOfMonth,  // Filter by the start of the month
+          $lt: endOfMonth,     // Filter by the end of the month
         },
       });
 
       const mappingDaybyDay = getCountsPerDay.reduce((acc, item) => {
-        const date = moment(item.createdAt).startOf('day').toDate();
+        const date = moment(item.createdAt).startOf("day").toDate();
 
-        const existingDay = acc.find(d => moment(d.date).isSame(date, 'day'));
+        const existingDay = acc.find((d) => moment(d.date).isSame(date, "day"));
 
         if (existingDay) {
-
           const categoryIndex = existingDay.countHistory.findIndex(
             (entry) => entry.categoryName === category.categoryName
           );
-          
+
           if (categoryIndex !== -1) {
             existingDay.countHistory[categoryIndex].count += 1;
           } else {
@@ -277,7 +471,7 @@ const HandleGetHistory = async (req, res) => {
             countHistory: [
               {
                 categoryName: category.categoryName,
-                count: 1, 
+                count: 1,
               },
             ],
           });
@@ -290,14 +484,18 @@ const HandleGetHistory = async (req, res) => {
     });
 
     const resolved = await Promise.all(userCatMap);
-    
+
     const combinedHistory = resolved.flat().reduce((acc, item) => {
-      const existingDay = acc.find(d => moment(d.date).isSame(item.date, 'day'));
+      const existingDay = acc.find((d) =>
+        moment(d.date).isSame(item.date, "day")
+      );
 
       if (existingDay) {
-        item.countHistory.forEach(cat => {
-          const existingCategory = existingDay.countHistory.find(c => c.categoryName === cat.categoryName);
-          
+        item.countHistory.forEach((cat) => {
+          const existingCategory = existingDay.countHistory.find(
+            (c) => c.categoryName === cat.categoryName
+          );
+
           if (existingCategory) {
             existingCategory.count += cat.count;
           } else {
