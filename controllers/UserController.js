@@ -2,9 +2,10 @@ import Joi from "joi";
 import validateData from "../utils/validator.js";
 import User from "../models/User.js";
 
-const HandleGetAllUsers = (req, res) => {
+const HandleGetAllUsers = async (req, res) => {
   try {
-    res.send("MVC WORKING, Welcome");
+    const users = await User.find();
+    res.status(200).json(users);
   } catch (error) {
     console.log(error);
   }
