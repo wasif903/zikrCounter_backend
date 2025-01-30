@@ -5,12 +5,12 @@ const CounterService = io => {
   let connectedUsers = {};
   let counters = [];
 
-  io.on("connection", socket => {
+  io.on("connection", (socket) => {
     const userID = socket.handshake.query.userID;
-    console.log(userID);
+    // console.log(userID, "----------------------");
     console.log("Connected to socket.io");
 
-    socket.on("setup", async userID => {
+    socket.on("setup", async (userID) => {
       if (connectedUsers[userID] && connectedUsers[userID] !== socket.id) {
         console.log(
           `User already connected with a different socket ID. Replacing socket ID for ${userID}.`

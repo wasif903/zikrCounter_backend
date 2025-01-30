@@ -72,58 +72,47 @@ const HandleGetUserCategories = async (req, res) => {
 
 const HandleCount = async (req, res) => {
   try {
-    const { data } = req.body;
+    const { count } = req.body;
 
-    console.log(data);
-
-    if (!Array.isArray(data)) {
-      return res.status(400).json({ message: "Invalid Format" });
+    const countInt = parseInt(count, 10);
+    if (isNaN(countInt)) {
+      return res.status(400).json({ message: "Invalid Count" });
     }
 
-    const error = [];
-    const validate = data.map(async (item) => {
-      try {
-        if (item.userID && item.catID) {
-          error.push({
-            ...item,
-            error: { message: "userID or catID doesn't exists!" },
-          });
-        }
+    if (countInt <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Count must be a positive integer" });
+    }
 
-        const findUser = await User.findById(item.userID);
-        if (!findUser) {
-          error.push({
-            ...item,
-            error: { message: "User Not Found" },
-          });
-        }
+    const { userID, catID } = req.params;
+    if (!userID || !catID) {
+      return res
+        .status(400)
+        .json({ message: "Invalid User ID or Category ID" });
+    }
+    const findUser = await User.findById(userID);
+    if (!findUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const findCategory = await CategoryModel.findById(catID);
+    if (!findCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    const findCounter = await CounterModel.findOne({ userID, catID });
+    if (!findCounter) {
+      return res.status(404).json({ message: "Unauthorized Request" });
+    }
 
-        const findCat = await CategoryModel.findById(item.catID);
-        if (!findCat) {
-          error.push({
-            ...item,
-            error: { message: "Category Not Found" },
-          });
-        }
-      } catch (error) {
-        console.log(error);
-        error.push({
-          ...item,
-          error: { message: "Invalid Request" },
-        });
-      }
+    const createArr = Array.from({ length: countInt }, () => {
+      return {
+        userID,
+        catID,
+      };
     });
 
-    const resolved = await Promise.all(validate);
-
-    console.log(error);
-
-    if (error.length !== 0) {
-      await CounterModel.insertMany(data);
-      res.status(201).json({ message: "Count Created Successfully" });
-    } else {
-      res.status(201).json({ message: "Error Updating Data", error });
-    }
+    await CounterModel.insertMany(createArr);
+    res.status(201).json({ message: "Counts Updated Successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -409,7 +398,7 @@ const HandleGetSingleCat = async (req, res) => {
 const HandleGetHistory = async (req, res) => {
   try {
     const { userID } = req.params;
-    const { month, year } = req.query;  // Get both month and year from query parameters
+    const { month, year } = req.query; // Get both month and year from query parameters
 
     const findUser = await User.findById(userID);
     if (!findUser) {
@@ -426,13 +415,13 @@ const HandleGetHistory = async (req, res) => {
 
     // Use current date for default month and year if not provided
     const currentDate = moment().tz("UTC");
-    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();  // Adjust month to zero-indexed
-    const queryYear = year ? parseInt(year, 10) : currentDate.year();  // Default to current year if not provided
+    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month(); // Adjust month to zero-indexed
+    const queryYear = year ? parseInt(year, 10) : currentDate.year(); // Default to current year if not provided
 
     // Calculate start and end of the selected month
     const startOfMonth = moment
       .tz({ year: queryYear, month: queryMonth, day: 1 }, "UTC")
-      .startOf('day')
+      .startOf("day")
       .toDate();
     const endOfMonth = moment(startOfMonth).add(1, "month").toDate();
 
@@ -441,8 +430,8 @@ const HandleGetHistory = async (req, res) => {
         userID,
         catID: category._id,
         createdAt: {
-          $gte: startOfMonth,  // Filter by the start of the month
-          $lt: endOfMonth,     // Filter by the end of the month
+          $gte: startOfMonth, // Filter by the start of the month
+          $lt: endOfMonth, // Filter by the end of the month
         },
       });
 
@@ -518,7 +507,6 @@ const HandleGetHistory = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 export {
   HandleCreateCAtegory,
