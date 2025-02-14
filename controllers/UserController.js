@@ -150,6 +150,7 @@ const HandleLogin = async (req, res) => {
       _id: user._id,
       username: user.username,
       email: user.email,
+      password: user.password,
       role: user.role
     };
 
@@ -317,6 +318,50 @@ const HandleResendOtp = async (req, res) => {
   }
 };
 
+// @PATCH
+// ENDPOINT /api/update-profile/:id
+const HandleUpdateProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const schema = Joi.object({
+      username: Joi.string(),
+      email: Joi.string().email()
+    });
+
+    const { error, value } = validateData(schema, req.body);
+
+    if (error) {
+      return res.status(400).json({ message: error });
+    }
+
+    const { username, email } = value;
+
+    const findUser = await User.findById(id);
+    if (!findUser) {
+      return res.status(404).json({ message: "Invalid Request" });
+    }
+
+    findUser.username = username || findUser.username;
+    findUser.email = email || findUser.email;
+
+    await findUser.save();
+
+    const token = {
+      _id: findUser._id,
+      username: findUser.username,
+      email: findUser.email,
+      password: findUser.password,
+      role: findUser.role
+    };
+
+    res.status(200).json({ message: "Profile Updated Successfully", token });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export {
   HandleGetAllUsers,
   HandleSignup,
@@ -324,5 +369,6 @@ export {
   HandleForgotPassword,
   HandleVerifyOtp,
   HandleResetPassword,
-  HandleResendOtp
+  HandleResendOtp,
+  HandleUpdateProfile
 };
