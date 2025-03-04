@@ -316,6 +316,9 @@ const HandleGetHistory = async (req, res) => {
   }
 };
 
+
+
+
 const HandleDeleteCat = async (req, res) => {
   try {
     const { userID, categoryID } = req.params;
@@ -376,3 +379,121 @@ export {
   HandleDeleteCat,
   HandleUpdateCategory,
 };
+
+
+
+// const HandleGetHistory = async (req, res) => {
+//   try {
+//     const { userID } = req.params;
+//     const { from, to } = req.query; // Get from and to dates from query parameters
+
+//     // Validate the "from" and "to" date parameters
+//     if (!from || !to) {
+//       return res.status(400).json({ message: "'from' and 'to' dates are required" });
+//     }
+
+//     const fromDate = moment(from).tz("UTC");
+//     const toDate = moment(to).tz("UTC");
+
+//     if (!fromDate.isValid() || !toDate.isValid()) {
+//       return res.status(400).json({ message: "Invalid date format" });
+//     }
+
+//     // Ensure "from" date is before "to" date
+//     if (fromDate.isAfter(toDate)) {
+//       return res.status(400).json({ message: "'from' date cannot be after 'to' date" });
+//     }
+
+//     const findUser = await User.findById(userID);
+//     if (!findUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const userCategories = await CategoryModel.find({ userID });
+
+//     if (!userCategories.length) {
+//       return res.status(404).json({ message: "No categories found for this user" });
+//     }
+
+//     const userCatMap = userCategories.map(async (category) => {
+//       const getCountsPerDay = await CounterModel.find({
+//         userID,
+//         catID: category._id,
+//         createdAt: {
+//           $gte: fromDate.toDate(), // Filter by "from" date
+//           $lte: toDate.endOf('day').toDate(), // Filter by "to" date (end of the day)
+//         },
+//       });
+
+//       const mappingDaybyDay = getCountsPerDay.reduce((acc, item) => {
+//         const date = moment(item.createdAt).startOf("day").toDate();
+
+//         const existingDay = acc.find((d) => moment(d.date).isSame(date, "day"));
+
+//         if (existingDay) {
+//           const categoryIndex = existingDay.countHistory.findIndex(
+//             (entry) => entry.categoryName === category.categoryName
+//           );
+
+//           if (categoryIndex !== -1) {
+//             existingDay.countHistory[categoryIndex].count += 1;
+//           } else {
+//             existingDay.countHistory.push({
+//               categoryName: category.categoryName,
+//               count: 1,
+//             });
+//           }
+//         } else {
+//           // Otherwise, create a new entry for the date
+//           acc.push({
+//             date,
+//             countHistory: [
+//               {
+//                 categoryName: category.categoryName,
+//                 count: 1,
+//               },
+//             ],
+//           });
+//         }
+
+//         return acc;
+//       }, []);
+
+//       return mappingDaybyDay;
+//     });
+
+//     const resolved = await Promise.all(userCatMap);
+
+//     const combinedHistory = resolved.flat().reduce((acc, item) => {
+//       const existingDay = acc.find((d) =>
+//         moment(d.date).isSame(item.date, "day")
+//       );
+
+//       if (existingDay) {
+//         item.countHistory.forEach((cat) => {
+//           const existingCategory = existingDay.countHistory.find(
+//             (c) => c.categoryName === cat.categoryName
+//           );
+
+//           if (existingCategory) {
+//             existingCategory.count += cat.count;
+//           } else {
+//             existingDay.countHistory.push(cat);
+//           }
+//         });
+//       } else {
+//         acc.push(item);
+//       }
+
+//       return acc;
+//     }, []);
+
+//     res.status(200).json({
+//       user: findUser,
+//       history: combinedHistory,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
