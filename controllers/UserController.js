@@ -142,7 +142,7 @@ const HandleLogin = async (req, res) => {
   try {
     const schema = Joi.object({
       email: Joi.string().email().required(),
-      password: Joi.string().min(8).required().messages({
+      password: Joi.string().required().messages({
         "any.required": "Password is required",
         "string.min": "Password must be at least 8 characters long",
       }),
