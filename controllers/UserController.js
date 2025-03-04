@@ -79,8 +79,8 @@ const HandleSignup = async (req, res) => {
       email: Joi.string().email().required(),
       password: Joi.string().min(8).required().messages({
         "any.required": "Password is required",
-        "string.min": "Password must be at least 8 characters long"
-      })
+        "string.min": "Password must be at least 8 characters long",
+      }),
     });
 
     const { error, value } = validateData(schema, req.body);
@@ -106,7 +106,7 @@ const HandleSignup = async (req, res) => {
       _id: newUser._id,
       username: newUser.username,
       email: newUser.email,
-      role: ["User"]
+      role: ["User"],
     };
 
     res.status(201).json({ message: "User created successfully", token });
@@ -124,8 +124,8 @@ const HandleLogin = async (req, res) => {
       email: Joi.string().email().required(),
       password: Joi.string().min(8).required().messages({
         "any.required": "Password is required",
-        "string.min": "Password must be at least 8 characters long"
-      })
+        "string.min": "Password must be at least 8 characters long",
+      }),
     });
 
     const { error, value } = validateData(schema, req.body);
@@ -150,7 +150,7 @@ const HandleLogin = async (req, res) => {
       _id: user._id,
       username: user.username,
       email: user.email,
-      role: user.role
+      role: user.role,
     };
 
     res.status(200).json({ message: "Logged in successfully", token });
@@ -165,7 +165,7 @@ const HandleLogin = async (req, res) => {
 const HandleForgotPassword = async (req, res) => {
   try {
     const schema = Joi.object({
-      email: Joi.string().email().required()
+      email: Joi.string().email().required(),
     });
 
     const { error, value } = validateData(schema, req.body);
@@ -206,7 +206,7 @@ const HandleVerifyOtp = async (req, res) => {
   try {
     const schema = Joi.object({
       email: Joi.string().email().required(),
-      OtpCode: Joi.number().required()
+      OtpCode: Joi.number().required(),
     });
 
     const { error, value } = validateData(schema, req.body);
@@ -218,7 +218,7 @@ const HandleVerifyOtp = async (req, res) => {
     const findUser = await User.findOne({ email: email });
     if (!findUser) {
       return res.status(404).json({
-        message: "Sorry, We couldn't send your OTP Verification Code"
+        message: "Sorry, We couldn't send your OTP Verification Code",
       });
     }
     if (OtpCode === "") {
@@ -251,7 +251,7 @@ const HandleResetPassword = async (req, res) => {
     const schema = Joi.object({
       email: Joi.string().email().required(),
       password: Joi.string().min(8).required(),
-      confirmPassword: Joi.string().min(8).required()
+      confirmPassword: Joi.string().min(8).required(),
     });
 
     const { error, value } = validateData(schema, req.body);
@@ -263,7 +263,7 @@ const HandleResetPassword = async (req, res) => {
     const findUser = await User.findOne({ email: email });
     if (!findUser) {
       return res.status(404).json({
-        message: "Sorry, Some Error Occured While Resetting Password"
+        message: "Sorry, Some Error Occured While Resetting Password",
       });
     }
     if (password !== confirmPassword) {
@@ -283,7 +283,7 @@ const HandleResetPassword = async (req, res) => {
 const HandleResendOtp = async (req, res) => {
   try {
     const schema = Joi.object({
-      email: Joi.string().email().required()
+      email: Joi.string().email().required(),
     });
 
     const { error, value } = validateData(schema, req.body);
@@ -317,6 +317,29 @@ const HandleResendOtp = async (req, res) => {
   }
 };
 
+// @PATCH
+// ENDPOINT: /api/update-profile
+const HandleUpdateProfile = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      username: Joi.string().min(3).max(30).required(),
+      email: Joi.string().email().required(),
+      phone: Joi.string().min(10).max(15).required(),
+    });
+    const { error, value } = validateData(schema, req.body);
+    if (error) {
+      return res.status(400).send({ message: error });
+    }
+    const { username, email, phone } = value;
+
+    
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export {
   HandleGetAllUsers,
   HandleSignup,
@@ -324,5 +347,5 @@ export {
   HandleForgotPassword,
   HandleVerifyOtp,
   HandleResetPassword,
-  HandleResendOtp
+  HandleResendOtp,
 };

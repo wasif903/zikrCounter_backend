@@ -23,6 +23,10 @@ const UserSchema = new Schema(
     OtpExp: {
       type: Number,
     },
+    profileImg: {
+      type: String,
+      default: ""
+    },
   },
   {
     timestamps: true,

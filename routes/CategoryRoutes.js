@@ -1,5 +1,5 @@
 import express from "express";
-import { HandleCount, HandleCreateCAtegory, HandleGetHistory, HandleGetSingleCat, HandleGetUserCategories } from "../controllers/CategoryController.js";
+import { HandleCount, HandleCreateCAtegory, HandleGetHistory, HandleGetSingleCat, HandleGetUserCategories, HandleDeleteCat, HandleUpdateCategory } from "../controllers/CategoryController.js";
 
 const router = express.Router();
 
@@ -8,6 +8,10 @@ router.get("/:userID/get-user-categories", HandleGetUserCategories);
 
 
 router.post("/:userID/create-count/:catID", HandleCount);
+
+router.delete("/:userID/delete-category/:categoryID", HandleDeleteCat);
+
+router.patch("/:userID/update-category/:categoryID", HandleUpdateCategory);
 
 router.get("/:userID/get-single-category/:catID", HandleGetSingleCat)
 
