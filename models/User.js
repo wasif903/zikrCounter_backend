@@ -25,7 +25,7 @@ const UserSchema = new Schema(
     },
     profileImg: {
       type: String,
-      default: ""
+      default: "https://res.cloudinary.com/dhuhpslek/image/upload/fl_preserve_transparency/v1712595866/profile_demo_image_g57r6t.jpg?_s=public-apps"
     },
   },
   {

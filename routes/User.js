@@ -6,6 +6,7 @@ import {
   HandleResendOtp,
   HandleResetPassword,
   HandleSignup,
+  HandleUpdateProfile,
   HandleVerifyOtp,
 } from "../controllers/UserController.js";
 
@@ -17,6 +18,8 @@ router.get("/get-users", HandleGetAllUsers);
 router.post("/signup", HandleSignup);
 
 router.post("/login", HandleLogin);
+
+router.patch("/update-profile/:id", HandleUpdateProfile);
 
 router.patch("/forget-password", HandleForgotPassword);
 

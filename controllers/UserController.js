@@ -1,6 +1,7 @@
 import Joi from "joi";
 import validateData from "../utils/validator.js";
 import User from "../models/User.js";
+import { v2 as cloudinary } from "cloudinary";
 
 const HandleGetAllUsers = async (req, res) => {
   try {
@@ -91,6 +92,18 @@ const HandleSignup = async (req, res) => {
 
     const { username, email, password } = value;
 
+    const profileImg = req?.files.profileImg;
+    if (!profileImg) {
+      return res.status(400).json({ message: "Profile Image is required" });
+    }
+
+    const uploadResult = profileImg
+      ? await cloudinary.uploader.upload(profileImg.tempFilePath, {
+          resource_type: "image",
+          folder: "user-profiles",
+        })
+      : "https://res.cloudinary.com/dhuhpslek/image/upload/fl_preserve_transparency/v1712595866/profile_demo_image_g57r6t.jpg?_s=public-apps";
+
     const findExistingUser = await User.findOne({ email: email });
 
     if (findExistingUser) {
@@ -99,14 +112,21 @@ const HandleSignup = async (req, res) => {
         .json({ message: "Email or phone number must be unique" });
     }
 
-    const newUser = new User({ username, email, password });
+    const newUser = new User({
+      username,
+      email,
+      password,
+      profileImg: uploadResult.secure_url,
+    });
     await newUser.save();
 
     const token = {
       _id: newUser._id,
       username: newUser.username,
       email: newUser.email,
-      role: ["User"],
+      password: newUser.password,
+      profileImg: newUser.profileImg,
+      role: newUser.role,
     };
 
     res.status(201).json({ message: "User created successfully", token });
@@ -150,6 +170,8 @@ const HandleLogin = async (req, res) => {
       _id: user._id,
       username: user.username,
       email: user.email,
+      password: user.password,
+      profileImg: user.profileImg,
       role: user.role,
     };
 
@@ -318,22 +340,57 @@ const HandleResendOtp = async (req, res) => {
 };
 
 // @PATCH
-// ENDPOINT: /api/update-profile
+// ENDPOINT /api/update-profile/:id
 const HandleUpdateProfile = async (req, res) => {
   try {
+    const { id } = req.params;
+
     const schema = Joi.object({
-      username: Joi.string().min(3).max(30).required(),
-      email: Joi.string().email().required(),
-      phone: Joi.string().min(10).max(15).required(),
+      username: Joi.string(),
+      email: Joi.string().email(),
     });
+
     const { error, value } = validateData(schema, req.body);
+
     if (error) {
-      return res.status(400).send({ message: error });
+      return res.status(400).json({ message: error });
     }
-    const { username, email, phone } = value;
 
-    
+    const profileImg = req?.files.profileImg;
+    if (!profileImg) {
+      return res.status(400).json({ message: "Profile Image is required" });
+    }
 
+    const uploadResult = profileImg
+      ? await cloudinary.uploader.upload(profileImg.tempFilePath, {
+          resource_type: "image",
+          folder: "user-profiles",
+        })
+      : "https://res.cloudinary.com/dhuhpslek/image/upload/fl_preserve_transparency/v1712595866/profile_demo_image_g57r6t.jpg?_s=public-apps";
+
+    const { username, email } = value;
+
+    const findUser = await User.findById(id);
+    if (!findUser) {
+      return res.status(404).json({ message: "Invalid Request" });
+    }
+
+    findUser.username = username || findUser.username;
+    findUser.email = email || findUser.email;
+    findUser.profileImg = uploadResult.secure_url || findUser.profileImg;
+
+    await findUser.save();
+
+    const token = {
+      _id: findUser._id,
+      username: findUser.username,
+      email: findUser.email,
+      password: findUser.password,
+      profileImg: findUser.profileImg,
+      role: findUser.role,
+    };
+
+    res.status(200).json({ message: "Profile Updated Successfully", token });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -348,4 +405,5 @@ export {
   HandleVerifyOtp,
   HandleResetPassword,
   HandleResendOtp,
+  HandleUpdateProfile,
 };
