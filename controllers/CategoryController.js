@@ -434,94 +434,6 @@ const HandleGetSingleCat = async (req, res) => {
 //   }
 // };
 
-// const HandleGetHistory = async (req, res) => {
-//   try {
-//     const { userID } = req.params;
-//     const { month, year } = req.query;
-
-//     const startDate = req.query.startDate;
-//     const endDate = req.query.endDate?.split("T")?.[0];
-
-//     let createdAt = {};
-//     if (startDate) createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
-//     if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
-
-//     if (startDate) {
-//       createdAt = { $gte: new Date(`${startDate}T00:00:00.000Z`)};
-//     }
-//     if (endDate) {
-//       const getEndOfDay = new Date(`${endDate}T23:59:59.000Z`);
-//       createdAt = { ...createdAt, $lte: new Date(getEndOfDay) };
-//     }
-
-//     const findUser = await User.findById(userID);
-//     if (!findUser) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const userCategories = await CategoryModel.find({ userID });
-
-//     if (!userCategories.length) {
-//       return res
-//         .status(404)
-//         .json({ message: "No categories found for this user" });
-//     }
-
-//     const catIds = userCategories.map((item) => item._id);
-
-//     const pipeline = [
-//       {
-//         $match: {
-//           userID: new mongoose.Types.ObjectId(userID),
-//           createdAt,
-//           catID: { $in: catIds },
-//         },
-//       },
-//       // Group by the date and catID, and count the occurrences
-//       {
-//         $group: {
-//           _id: {
-//             date: { $substr: [{ $toString: "$createdAt" }, 0, 10] }, // Extract YYYY-MM-DD date format
-//             catID: "$catID",
-//           },
-//           count: { $sum: 1 }, // Count the occurrences
-//         },
-//       },
-//       // Lookup category data to get category name
-//       {
-//         $lookup: {
-//           from: "categories", // The categories collection
-//           localField: "_id.catID",
-//           foreignField: "_id",
-//           as: "category",
-//         },
-//       },
-//       { $unwind: "$category" }, // Flatten the category object
-//       {
-//         $project: {
-//           date: "$_id.date",
-//           categoryName: "$category.categoryName",
-//           count: 1,
-//           _id: 0,
-//         },
-//       },
-//       {
-//         $sort: { date: 1 }, // Optional: Sort by date
-//       },
-//     ];
-
-//     const counter = await CounterModel.aggregate(pipeline);
-
-//     res.status(200).json({
-//       user: findUser,
-//       history: counter,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
 const HandleGetHistory = async (req, res) => {
   try {
     const { userID } = req.params;
@@ -531,18 +443,16 @@ const HandleGetHistory = async (req, res) => {
     const endDate = req.query.endDate?.split("T")?.[0];
 
     let createdAt = {};
+    if (startDate) createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
+    if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
 
-    // Ensure time of startDate is set to 00:00:00
     if (startDate) {
-      createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
+      createdAt = { $gte: new Date(`${startDate}T00:00:00.000Z`)};
     }
-
-    // Ensure time of endDate is set to 23:59:59
     if (endDate) {
-      createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
+      const getEndOfDay = new Date(`${endDate}T23:59:59.000Z`);
+      createdAt = { ...createdAt, $lte: new Date(getEndOfDay) };
     }
-
-    console.log(createdAt, "createdAt")
 
     const findUser = await User.findById(userID);
     if (!findUser) {
@@ -563,7 +473,7 @@ const HandleGetHistory = async (req, res) => {
       {
         $match: {
           userID: new mongoose.Types.ObjectId(userID),
-          createdAt: createdAt,
+          createdAt,
           catID: { $in: catIds },
         },
       },
@@ -611,6 +521,96 @@ const HandleGetHistory = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+// const HandleGetHistory = async (req, res) => {
+//   try {
+//     const { userID } = req.params;
+//     const { month, year } = req.query;
+
+//     const startDate = req.query.startDate;
+//     const endDate = req.query.endDate?.split("T")?.[0];
+
+//     let createdAt = {};
+
+//     // Ensure time of startDate is set to 00:00:00
+//     if (startDate) {
+//       createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
+//     }
+
+//     // Ensure time of endDate is set to 23:59:59
+//     if (endDate) {
+//       createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
+//     }
+
+//     console.log(createdAt, "createdAt")
+
+//     const findUser = await User.findById(userID);
+//     if (!findUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const userCategories = await CategoryModel.find({ userID });
+
+//     if (!userCategories.length) {
+//       return res
+//         .status(404)
+//         .json({ message: "No categories found for this user" });
+//     }
+
+//     const catIds = userCategories.map((item) => item._id);
+
+//     const pipeline = [
+//       {
+//         $match: {
+//           userID: new mongoose.Types.ObjectId(userID),
+//           createdAt: createdAt,
+//           catID: { $in: catIds },
+//         },
+//       },
+//       // Group by the date and catID, and count the occurrences
+//       {
+//         $group: {
+//           _id: {
+//             date: { $substr: [{ $toString: "$createdAt" }, 0, 10] }, // Extract YYYY-MM-DD date format
+//             catID: "$catID",
+//           },
+//           count: { $sum: 1 }, // Count the occurrences
+//         },
+//       },
+//       // Lookup category data to get category name
+//       {
+//         $lookup: {
+//           from: "categories", // The categories collection
+//           localField: "_id.catID",
+//           foreignField: "_id",
+//           as: "category",
+//         },
+//       },
+//       { $unwind: "$category" }, // Flatten the category object
+//       {
+//         $project: {
+//           date: "$_id.date",
+//           categoryName: "$category.categoryName",
+//           count: 1,
+//           _id: 0,
+//         },
+//       },
+//       {
+//         $sort: { date: 1 }, // Optional: Sort by date
+//       },
+//     ];
+
+//     const counter = await CounterModel.aggregate(pipeline);
+
+//     res.status(200).json({
+//       user: findUser,
+//       history: counter,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
 
 
 const HandleDeleteCat = async (req, res) => {
