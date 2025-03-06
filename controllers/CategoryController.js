@@ -207,7 +207,6 @@ const HandleGetSingleCat = async (req, res) => {
 const HandleGetHistory = async (req, res) => {
   try {
     const { userID } = req.params;
-    const { month, year } = req.query;
 
     const startDate = req.query.startDate;
     const endDate = req.query.endDate?.split("T")?.[0];
