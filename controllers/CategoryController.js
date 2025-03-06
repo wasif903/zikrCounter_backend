@@ -204,236 +204,6 @@ const HandleGetSingleCat = async (req, res) => {
   }
 };
 
-// const HandleGetHistory = async (req, res) => {
-//   try {
-//     const { userID } = req.params;
-//     const { month, year } = req.query;
-
-//     const startDate = req.query.startDate;
-//     const endDate = req.query.endDate?.split("T")?.[0];
-
-//     let createdAt = {};
-//     if (startDate) createdAt.$gte = new Date(startDate);
-//     if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
-
-//     if (startDate) {
-//       createdAt = { $gte: new Date(startDate) };
-//     }
-//     if (endDate) {
-//       const getEndOfDay = new Date(`${endDate}T23:59:59.000Z`);
-//       createdAt = { ...createdAt, $lte: new Date(getEndOfDay) };
-//     }
-
-//     const findUser = await User.findById(userID);
-//     if (!findUser) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const userCategories = await CategoryModel.find({ userID });
-
-//     if (!userCategories.length) {
-//       return res
-//         .status(404)
-//         .json({ message: "No categories found for this user" });
-//     }
-
-//     const userCatMap = userCategories.map(async (category) => {
-//       const getCountsPerDay = await CounterModel.find({
-//         userID,
-//         catID: category._id,
-//         createdAt
-//       });
-
-//       const mappingDaybyDay = getCountsPerDay.reduce((acc, item) => {
-//         if (existingDay) {
-//           const categoryIndex = existingDay.countHistory.findIndex(
-//             (entry) => entry.categoryName === category.categoryName
-//           );
-
-//           if (categoryIndex !== -1) {
-//             existingDay.countHistory[categoryIndex].count += 1;
-//           } else {
-//             existingDay.countHistory.push({
-//               categoryName: category.categoryName,
-//               count: 1,
-//             });
-//           }
-//         } else {
-//           // Otherwise, create a new entry for the date
-//           acc.push({
-//             date,
-//             countHistory: [
-//               {
-//                 categoryName: category.categoryName,
-//                 count: 1,
-//               },
-//             ],
-//           });
-//         }
-
-//         return acc;
-//       }, []);
-
-//       return mappingDaybyDay;
-//     });
-
-//     const resolved = await Promise.all(userCatMap);
-
-//     const combinedHistory = resolved.flat().reduce((acc, item) => {
-//       const existingDay = acc.find((d) =>
-//         moment(d.date).isSame(item.date, "day")
-//       );
-
-//       if (existingDay) {
-//         item.countHistory.forEach((cat) => {
-//           const existingCategory = existingDay.countHistory.find(
-//             (c) => c.categoryName === cat.categoryName
-//           );
-
-//           if (existingCategory) {
-//             existingCategory.count += cat.count;
-//           } else {
-//             existingDay.countHistory.push(cat);
-//           }
-//         });
-//       } else {
-//         acc.push(item);
-//       }
-
-//       return acc;
-//     }, []);
-
-//     res.status(200).json({
-//       user: findUser,
-//       history: combinedHistory,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-// Working Fine
-// const HandleGetHistory = async (req, res) => {
-//   try {
-//     const { userID } = req.params;
-//     const { month, year } = req.query;
-
-//     const startDate = req.query.startDate;
-//     const endDate = req.query.endDate?.split("T")?.[0];
-
-//     let createdAt = {};
-//     if (startDate) createdAt.$gte = new Date(startDate);
-//     if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
-
-//     if (startDate) {
-//       createdAt = { $gte: new Date(startDate) };
-//     }
-//     if (endDate) {
-//       const getEndOfDay = new Date(`${endDate}T23:59:59.000Z`);
-//       createdAt = { ...createdAt, $lte: new Date(getEndOfDay) };
-//     }
-
-//     const findUser = await User.findById(userID);
-//     if (!findUser) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const userCategories = await CategoryModel.find({ userID });
-
-//     if (!userCategories.length) {
-//       return res
-//         .status(404)
-//         .json({ message: "No categories found for this user" });
-//     }
-
-//     const userCatMap = userCategories.map(async (category) => {
-//       const getCountsPerDay = await CounterModel.find({
-//         userID,
-//         catID: category._id,
-//         createdAt,
-//       });
-
-//       const mappingDaybyDay = getCountsPerDay.reduce((acc, item) => {
-//         const existingDay = acc.find((entry) => {
-//           // Ensure item.createdAt is a Date object or convert it
-//           const itemDate = new Date(item.createdAt);
-//           const entryDate = new Date(entry.date);
-//           return itemDate.toDateString() === entryDate.toDateString(); // Compare only by the day
-//         });
-
-//         if (existingDay) {
-//           const categoryIndex = existingDay.countHistory.findIndex(
-//             (entry) => entry.categoryName === category.categoryName
-//           );
-
-//           if (categoryIndex !== -1) {
-//             existingDay.countHistory[categoryIndex].count += 1;
-//           } else {
-//             existingDay.countHistory.push({
-//               categoryName: category.categoryName,
-//               count: 1,
-//             });
-//           }
-//         } else {
-//           // Ensure item.createdAt is a Date object and use toISOString for a string format
-//           const dateString = new Date(item.createdAt).toISOString().split("T")[0]; // Extract date part
-
-//           acc.push({
-//             date: dateString, // Only date part
-//             countHistory: [
-//               {
-//                 categoryName: category.categoryName,
-//                 count: 1,
-//               },
-//             ],
-//           });
-//         }
-
-//         return acc;
-//       }, []);
-
-//       return mappingDaybyDay;
-//     });
-
-//     const resolved = await Promise.all(userCatMap);
-
-//     const combinedHistory = resolved.flat().reduce((acc, item) => {
-//       const existingDay = acc.find((d) => {
-//         const itemDate = new Date(item.date);
-//         const entryDate = new Date(d.date);
-//         return itemDate.toDateString() === entryDate.toDateString(); // Compare only by the day
-//       });
-
-//       if (existingDay) {
-//         item.countHistory.forEach((cat) => {
-//           const existingCategory = existingDay.countHistory.find(
-//             (c) => c.categoryName === cat.categoryName
-//           );
-
-//           if (existingCategory) {
-//             existingCategory.count += cat.count;
-//           } else {
-//             existingDay.countHistory.push(cat);
-//           }
-//         });
-//       } else {
-//         acc.push(item);
-//       }
-
-//       return acc;
-//     }, []);
-
-//     res.status(200).json({
-//       user: findUser,
-//       history: combinedHistory,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
 const HandleGetHistory = async (req, res) => {
   try {
     const { userID } = req.params;
@@ -447,7 +217,7 @@ const HandleGetHistory = async (req, res) => {
     if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
 
     if (startDate) {
-      createdAt = { $gte: new Date(`${startDate}T00:00:00.000Z`)};
+      createdAt = { $gte: new Date(`${startDate}T00:00:00.000Z`) };
     }
     if (endDate) {
       const getEndOfDay = new Date(`${endDate}T23:59:59.000Z`);
@@ -477,37 +247,51 @@ const HandleGetHistory = async (req, res) => {
           catID: { $in: catIds },
         },
       },
-      // Group by the date and catID, and count the occurrences
       {
         $group: {
           _id: {
-            date: { $substr: [{ $toString: "$createdAt" }, 0, 10] }, // Extract YYYY-MM-DD date format
+            date: { $substr: [{ $toString: "$createdAt" }, 0, 10] }, // Extract YYYY-MM-DD
             catID: "$catID",
           },
-          count: { $sum: 1 }, // Count the occurrences
+          count: { $sum: 1 },
         },
       },
-      // Lookup category data to get category name
       {
         $lookup: {
-          from: "categories", // The categories collection
+          from: "categories",
           localField: "_id.catID",
           foreignField: "_id",
           as: "category",
         },
       },
-      { $unwind: "$category" }, // Flatten the category object
+      { $unwind: "$category" },
       {
         $project: {
+          _id: 0,
           date: "$_id.date",
           categoryName: "$category.categoryName",
           count: 1,
-          _id: 0,
         },
       },
       {
-        $sort: { date: 1 }, // Optional: Sort by date
+        $group: {
+          _id: "$date",
+          counts: {
+            $push: {
+              count: "$count",
+              categoryName: "$categoryName",
+            },
+          },
+        },
       },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          counts: 1,
+        },
+      },
+      { $sort: { date: 1 } },
     ];
 
     const counter = await CounterModel.aggregate(pipeline);
@@ -522,95 +306,6 @@ const HandleGetHistory = async (req, res) => {
   }
 };
 
-// const HandleGetHistory = async (req, res) => {
-//   try {
-//     const { userID } = req.params;
-//     const { month, year } = req.query;
-
-//     const startDate = req.query.startDate;
-//     const endDate = req.query.endDate?.split("T")?.[0];
-
-//     let createdAt = {};
-
-//     // Ensure time of startDate is set to 00:00:00
-//     if (startDate) {
-//       createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
-//     }
-
-//     // Ensure time of endDate is set to 23:59:59
-//     if (endDate) {
-//       createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
-//     }
-
-//     console.log(createdAt, "createdAt")
-
-//     const findUser = await User.findById(userID);
-//     if (!findUser) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const userCategories = await CategoryModel.find({ userID });
-
-//     if (!userCategories.length) {
-//       return res
-//         .status(404)
-//         .json({ message: "No categories found for this user" });
-//     }
-
-//     const catIds = userCategories.map((item) => item._id);
-
-//     const pipeline = [
-//       {
-//         $match: {
-//           userID: new mongoose.Types.ObjectId(userID),
-//           createdAt: createdAt,
-//           catID: { $in: catIds },
-//         },
-//       },
-//       // Group by the date and catID, and count the occurrences
-//       {
-//         $group: {
-//           _id: {
-//             date: { $substr: [{ $toString: "$createdAt" }, 0, 10] }, // Extract YYYY-MM-DD date format
-//             catID: "$catID",
-//           },
-//           count: { $sum: 1 }, // Count the occurrences
-//         },
-//       },
-//       // Lookup category data to get category name
-//       {
-//         $lookup: {
-//           from: "categories", // The categories collection
-//           localField: "_id.catID",
-//           foreignField: "_id",
-//           as: "category",
-//         },
-//       },
-//       { $unwind: "$category" }, // Flatten the category object
-//       {
-//         $project: {
-//           date: "$_id.date",
-//           categoryName: "$category.categoryName",
-//           count: 1,
-//           _id: 0,
-//         },
-//       },
-//       {
-//         $sort: { date: 1 }, // Optional: Sort by date
-//       },
-//     ];
-
-//     const counter = await CounterModel.aggregate(pipeline);
-
-//     res.status(200).json({
-//       user: findUser,
-//       history: counter,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
 
 
 const HandleDeleteCat = async (req, res) => {
