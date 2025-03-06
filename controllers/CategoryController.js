@@ -100,10 +100,7 @@ const HandleCount = async (req, res) => {
     if (!findCategory) {
       return res.status(404).json({ message: "Category not found" });
     }
-    // const findCounter = await CounterModel.findOne({ userID, catID });
-    // if (!findCounter) {
-    //   return res.status(404).json({ message: "Unauthorized Request" });
-    // }
+    
 
     const createArr = Array.from({ length: countInt }, () => {
       return {
