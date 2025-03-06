@@ -120,15 +120,99 @@ const HandleCount = async (req, res) => {
   }
 };
 
+// const HandleGetSingleCat = async (req, res) => {
+//   try {
+//     const { userID, catID } = req.params;
+//     const { month, year } = req.query;
+
+//     if (!userID || !catID) {
+//       return res
+//         .status(400)
+//         .json({ message: "Invalid User ID or Category ID" });
+//     }
+
+//     const findUser = await User.findById(userID);
+//     if (!findUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const findCategory = await CategoryModel.findById(catID);
+//     if (!findCategory) {
+//       return res.status(404).json({ message: "Category not found" });
+//     }
+
+//     findCategory.lastOpened = moment().tz("UTC").toDate();
+//     await findCategory.save();
+
+//     const currentDate = moment().tz("UTC");
+//     const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();
+//     const queryYear = year ? parseInt(year, 10) : currentDate.year();
+
+//     const startOfMonth = moment
+//       .tz({ year: queryYear, month: queryMonth, day: 1 }, "UTC")
+//       .startOf("day")
+//       .toDate();
+//     const endOfMonth = moment(startOfMonth)
+//       .add(1, "month")
+//       .startOf("day")
+//       .toDate();
+
+//     const startOfDay = currentDate.startOf("day").toDate();
+//     const endOfDay = currentDate.endOf("day").toDate();
+
+//     const getCountsPerDay = await CounterModel.find({
+//       userID,
+//       catID,
+//       createdAt: {
+//         $gte: startOfMonth,
+//         $lt: endOfMonth,
+//       },
+//     });
+
+//     const groupedData = getCountsPerDay.reduce((acc, item) => {
+//       const date = moment(item.createdAt).tz("UTC").format("YYYY-MM-DD");
+//       if (acc[date]) {
+//         acc[date].count += 1;
+//       } else {
+//         acc[date] = { date, count: 1 };
+//       }
+//       return acc;
+//     }, {});
+
+//     const mapData = Object.values(groupedData);
+
+//     const todayCount = await CounterModel.countDocuments({
+//       userID,
+//       catID,
+//       createdAt: { $gte: startOfDay, $lt: endOfDay },
+//     });
+
+//     const totalCount = await CounterModel.countDocuments({
+//       userID,
+//       catID,
+//     });
+
+//     res.status(200).json({
+//       category: findCategory,
+//       todayCount,
+//       totalCount,
+//       countsByDay: mapData,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
+
+
 const HandleGetSingleCat = async (req, res) => {
   try {
     const { userID, catID } = req.params;
-    const { month, year } = req.query;
+    const { startDate, endDate } = req.query;
 
     if (!userID || !catID) {
-      return res
-        .status(400)
-        .json({ message: "Invalid User ID or Category ID" });
+      return res.status(400).json({ message: "Invalid User ID or Category ID" });
     }
 
     const findUser = await User.findById(userID);
@@ -141,68 +225,66 @@ const HandleGetSingleCat = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    findCategory.lastOpened = moment().tz("UTC").toDate();
+    findCategory.lastOpened = new Date();
     await findCategory.save();
 
-    const currentDate = moment().tz("UTC");
-    const queryMonth = month ? parseInt(month, 10) - 1 : currentDate.month();
-    const queryYear = year ? parseInt(year, 10) : currentDate.year();
+    let createdAt = {};
+    if (startDate) createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
+    if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
 
-    const startOfMonth = moment
-      .tz({ year: queryYear, month: queryMonth, day: 1 }, "UTC")
-      .startOf("day")
-      .toDate();
-    const endOfMonth = moment(startOfMonth)
-      .add(1, "month")
-      .startOf("day")
-      .toDate();
-
-    const startOfDay = currentDate.startOf("day").toDate();
-    const endOfDay = currentDate.endOf("day").toDate();
-
-    const getCountsPerDay = await CounterModel.find({
-      userID,
-      catID,
-      createdAt: {
-        $gte: startOfMonth,
-        $lt: endOfMonth,
+    const pipeline = [
+      {
+        $match: {
+          userID: new mongoose.Types.ObjectId(userID),
+          catID: new mongoose.Types.ObjectId(catID),
+          createdAt,
+        },
       },
-    });
+      {
+        $group: {
+          _id: { date: { $substr: [{ $toString: "$createdAt" }, 0, 10] } },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          date: "$_id.date",
+          count: 1,
+          _id: 0,
+        },
+      },
+      {
+        $sort: { date: 1 },
+      },
+    ];
 
-    const groupedData = getCountsPerDay.reduce((acc, item) => {
-      const date = moment(item.createdAt).tz("UTC").format("YYYY-MM-DD");
-      if (acc[date]) {
-        acc[date].count += 1;
-      } else {
-        acc[date] = { date, count: 1 };
-      }
-      return acc;
-    }, {});
+    const countsByDay = await CounterModel.aggregate(pipeline);
 
-    const mapData = Object.values(groupedData);
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setUTCHours(23, 59, 59, 999);
 
     const todayCount = await CounterModel.countDocuments({
       userID,
       catID,
-      createdAt: { $gte: startOfDay, $lt: endOfDay },
+      createdAt: { $gte: todayStart, $lt: todayEnd },
     });
 
-    const totalCount = await CounterModel.countDocuments({
-      userID,
-      catID,
-    });
+    const totalCount = await CounterModel.countDocuments({ userID, catID });
 
     res.status(200).json({
       category: findCategory,
       todayCount,
       totalCount,
-      countsByDay: mapData,
+      countsByDay,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 const HandleGetHistory = async (req, res) => {
   try {
