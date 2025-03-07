@@ -139,9 +139,27 @@ const HandleGetSingleCat = async (req, res) => {
     findCategory.lastOpened = new Date();
     await findCategory.save();
 
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    
+    const firstDayOfMonth = new Date(year, currentDate.getMonth(), 1);
+    const lastDayOfMonth = new Date(year, currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    
     let createdAt = {};
-    if (startDate) createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
-    if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
+    
+    if (startDate) {
+      createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
+    } else {
+      createdAt.$gte = firstDayOfMonth;
+    }
+    
+    if (endDate) {
+      createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
+    } else {
+      createdAt.$lte = lastDayOfMonth;
+    }
+    
 
     const pipeline = [
       {
@@ -204,17 +222,27 @@ const HandleGetHistory = async (req, res) => {
     const startDate = req.query.startDate;
     const endDate = req.query.endDate?.split("T")?.[0];
 
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    
+    const firstDayOfMonth = new Date(year, currentDate.getMonth(), 1);
+    const lastDayOfMonth = new Date(year, currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    
     let createdAt = {};
-    if (startDate) createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
-    if (endDate) createdAt.$lte = new Date(`${endDate}T23:59:59.000Z`);
-
+    
     if (startDate) {
-      createdAt = { $gte: new Date(`${startDate}T00:00:00.000Z`) };
+      createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
+    } else {
+      createdAt.$gte = firstDayOfMonth;
     }
+    
     if (endDate) {
-      const getEndOfDay = new Date(`${endDate}T23:59:59.000Z`);
-      createdAt = { ...createdAt, $lte: new Date(getEndOfDay) };
+      createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
+    } else {
+      createdAt.$lte = lastDayOfMonth;
     }
+    
 
     const findUser = await User.findById(userID);
     if (!findUser) {
