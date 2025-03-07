@@ -219,7 +219,7 @@ const HandleGetHistory = async (req, res) => {
   try {
     const { userID } = req.params;
 
-    const startDate = req.query.startDate;
+    const startDate = req.query.startDate?.split("T")?.[0];
     const endDate = req.query.endDate?.split("T")?.[0];
 
     const currentDate = new Date();
