@@ -92,10 +92,7 @@ const HandleSignup = async (req, res) => {
 
     const { username, email, password } = value;
 
-    const profileImg = req?.files.profileImg;
-    if (!profileImg) {
-      return res.status(400).json({ message: "Profile Image is required" });
-    }
+    const profileImg = req?.files?.profileImg;
 
     const uploadResult = profileImg
       ? await cloudinary.uploader.upload(profileImg.tempFilePath, {
@@ -116,7 +113,9 @@ const HandleSignup = async (req, res) => {
       username,
       email,
       password,
-      profileImg: uploadResult.secure_url,
+      profileImg: profileImg
+        ? uploadResult.secure_url
+        : "https://res.cloudinary.com/dhuhpslek/image/upload/fl_preserve_transparency/v1712595866/profile_demo_image_g57r6t.jpg?_s=public-apps",
     });
     await newUser.save();
 
