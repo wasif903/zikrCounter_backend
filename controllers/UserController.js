@@ -356,11 +356,17 @@ const HandleUpdateProfile = async (req, res) => {
       return res.status(400).json({ message: error });
     }
 
-    const profileImg = req?.files.profileImg;
+    const profileImg = req?.files?.profileImg;
+
     if (!profileImg) {
       return res.status(400).json({ message: "Profile Image is required" });
     }
-
+    
+    // Check file size (2 MB = 2 * 1024 * 1024 bytes)
+    if (profileImg.size > 2 * 1024 * 1024) {
+      return res.status(400).json({ message: "Profile Image must be less than 2 MB" });
+    }
+    
     const uploadResult = profileImg
       ? await cloudinary.uploader.upload(profileImg.tempFilePath, {
           resource_type: "image",
